@@ -1,0 +1,41 @@
+name: electrolibrary-test
+
+services:
+  tests:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.test
+    environment:
+      PYTHONPATH: /app
+      COUCHDB_URL: http://couchdb-test:5984
+      COUCHDB_DATABASE: electrolibrary_test
+      COUCHDB_USER: admin
+      COUCHDB_PASSWORD: password
+      REDIS_URL: redis://redis-test:6379/1
+      CACHE_TTL_SECONDS: 300
+      CACHE_ENABLED: "true"
+    depends_on:
+      couchdb-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+
+  couchdb-test:
+    image: couchdb:3
+    environment:
+      COUCHDB_USER: admin
+      COUCHDB_PASSWORD: password
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5984/_up"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+  redis-test:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
